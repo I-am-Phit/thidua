@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Thi Đua Lớp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7fb; }
+        
+        .tab-content { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hover-card { transition: all 0.3s ease; }
+        .hover-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .hidden-fade { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .visible-fade { opacity: 1; pointer-events: auto; transition: opacity 0.3s ease; }
+        
+        /* Custom Checkbox */
+        .checkbox-custom:checked + div {
+            background-color: #3b82f6; border-color: #3b82f6;
+        }
+        .checkbox-custom:checked + div svg { display: block; }
+        
+        .checkbox-negative:checked + div {
+            background-color: #ef4444; border-color: #ef4444;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <header class="bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3 w-full md:w-auto justify-center md:justify-start">
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
+                    <i class="fas fa-trophy text-2xl text-yellow-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">THI ĐUA LỚP HỌC</h1>
+                    <p class="text-blue-200 text-sm font-medium flex items-center justify-center md:justify-start gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Đồng bộ trực tuyến
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-2 w-full md:w-auto">
+                <div id="user-info" class="text-sm font-medium bg-white/10 px-3 py-2 rounded-lg border border-white/20 flex items-center">
+                    <i class="fas fa-eye text-blue-300 mr-2"></i> Chế độ Khách
+                </div>
+                
+                <button id="btn-login" onclick="window.showModal('login-modal')" class="text-sm bg-white text-blue-800 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors flex items-center font-bold shadow-sm">
+                    <i class="fas fa-lock mr-2"></i> Đăng nhập
+                </button>
+                
+                <div id="account-actions" class="hidden flex flex-wrap gap-2">
+                    <button onclick="window.showModal('change-pass-modal')" class="text-sm bg-indigo-500 hover:bg-indigo-600 px-3 py-2 rounded-lg text-white transition-colors flex items-center font-semibold" title="Đổi mật khẩu">
+                        <i class="fas fa-key"></i> <span class="hidden sm:inline ml-2">Đổi MK</span>
+                    </button>
+                    <button id="btn-reset" onclick="window.showModal('reset-data-modal')" class="text-sm bg-rose-500 hover:bg-rose-600 px-3 py-2 rounded-lg text-white transition-colors shadow flex items-center font-semibold" title="Làm mới điểm">
+                        <i class="fas fa-sync-alt mr-1"></i> Reset
+                    </button>
+                    <button id="btn-logout" onclick="window.handleLogout()" class="text-sm bg-gray-600 hover:bg-gray-700 px-3 py-2 rounded-lg text-white transition-colors flex items-center font-semibold">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Tabs -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-1 inline-flex border border-gray-200">
+                <button onclick="window.switchTab('to-view')" id="tab-to" class="px-6 sm:px-10 py-2.5 rounded-lg text-sm sm:text-base font-bold transition-all duration-300 bg-blue-100 text-blue-700 shadow-sm flex items-center">
+                    <i class="fas fa-layer-group mr-2"></i> THI ĐUA TỔ
+                </button>
+                <button onclick="window.switchTab('canhan-view')" id="tab-canhan" class="px-6 sm:px-10 py-2.5 rounded-lg text-sm sm:text-base font-bold transition-all duration-300 text-gray-500 hover:text-blue-600 hover:bg-blue-50 flex items-center ml-1">
+                    <i class="fas fa-user-graduate mr-2"></i> CÁ NHÂN
+                </button>
+            </div>
+        </div>
+
+        <!-- View: Thi Đua Tổ -->
+        <div id="to-view" class="tab-content block">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-extrabold text-blue-900">Tổng Điểm Thi Đua Tổ</h2>
+            </div>
+            <div id="groups-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Nội dung sinh ra từ JS -->
+            </div>
+        </div>
+
+        <!-- View: Thi Đua Cá Nhân -->
+        <div id="canhan-view" class="tab-content hidden">
+            <!-- Tuyên Dương Top 4 -->
+            <div class="mb-12 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex items-center justify-center mb-8 gap-3">
+                    <i class="fas fa-crown text-yellow-400 text-3xl"></i>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-800 uppercase tracking-wider text-center">Bảng Vinh Danh Top 4</h2>
+                    <i class="fas fa-crown text-yellow-400 text-3xl"></i>
+                </div>
+                <div id="tuyenduong-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                    <!-- Nội dung sinh ra từ JS -->
+                </div>
+            </div>
+
+            <div class="mb-6 flex items-center gap-2">
+                <i class="fas fa-clipboard-list text-blue-600 text-xl"></i>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800">Chi Tiết Điểm Cá Nhân</h2>
+            </div>
+            <div id="students-by-group-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                <!-- Nội dung sinh ra từ JS -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Đánh Giá (Checklist) -->
+    <div id="evaluation-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm hidden-fade px-4 py-6">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-full">
+            <div class="bg-blue-700 p-4 sm:p-5 flex justify-between items-center text-white shrink-0">
+                <h3 class="text-lg sm:text-xl font-bold flex items-center">
+                    <i class="fas fa-check-square mr-3 text-blue-200"></i> 
+                    Đánh giá: <span id="eval-target-name" class="ml-2 text-yellow-300"></span>
+                </h3>
+                <button onclick="window.hideModal('evaluation-modal')" class="text-white hover:text-gray-200 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Eval Tabs -->
+            <div class="flex border-b border-gray-200 shrink-0">
+                <button onclick="window.switchEvalTab('positive')" id="tab-eval-pos" class="flex-1 py-3 font-bold text-sm bg-blue-50 text-blue-700 border-b-2 border-blue-600 transition-colors">
+                    <i class="fas fa-plus-circle mr-1"></i> ĐIỂM CỘNG
+                </button>
+                <button onclick="window.switchEvalTab('negative')" id="tab-eval-neg" class="flex-1 py-3 font-bold text-sm text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-colors">
+                    <i class="fas fa-minus-circle mr-1"></i> LỖI VI PHẠM
+                </button>
+            </div>
+
+            <!-- Eval Content -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-grow bg-gray-50">
+                <div id="eval-content-pos" class="space-y-3">
+                    <!-- Checkbox list Điểm cộng -->
+                </div>
+                <div id="eval-content-neg" class="space-y-3 hidden">
+                    <!-- Checkbox list Điểm trừ -->
+                </div>
+            </div>
+
+            <!-- Eval Footer -->
+            <div class="p-4 bg-white border-t border-gray-100 flex justify-between items-center shrink-0">
+                <div class="text-sm font-semibold text-gray-600">
+                    Sẽ thay đổi: <span id="eval-total-change" class="text-lg font-black text-blue-600 ml-1">0</span> điểm
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="window.hideModal('evaluation-modal')" class="px-4 py-2 rounded-lg font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Hủy</button>
+                    <button onclick="window.submitEvaluation()" class="px-6 py-2 rounded-lg font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md transition flex items-center">
+                        <i class="fas fa-save mr-2"></i> Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Lịch Sử (Lý do thay đổi điểm) -->
+    <div id="history-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/70 backdrop-blur-sm hidden-fade px-4 py-6">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-full">
+            <div class="bg-gray-800 p-4 flex justify-between items-center text-white shrink-0">
+                <h3 class="text-lg font-bold flex items-center">
+                    <i class="fas fa-history mr-2 text-gray-300"></i> Lịch sử: <span id="history-target-name" class="ml-2 text-blue-300"></span>
+                </h3>
+                <button onclick="window.hideModal('history-modal')" class="text-white hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto flex-grow bg-gray-50">
+                <ul id="history-list" class="space-y-4 relative border-l-2 border-gray-200 ml-3 pl-4">
+                    <!-- Logs render here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Auth & Reset (Giữ nguyên cấu trúc) -->
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hidden-fade px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div class="bg-blue-600 p-5 text-center">
+                <h3 class="text-xl font-bold text-white"><i class="fas fa-shield-alt mr-2"></i>Xác Thực</h3>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Tài khoản</label>
+                    <select id="login-role" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="1">Tổ trưởng Tổ 1</option>
+                        <option value="2">Tổ trưởng Tổ 2</option>
+                        <option value="3">Tổ trưởng Tổ 3</option>
+                        <option value="4">Tổ trưởng Tổ 4</option>
+                        <option value="admin">Quản trị viên (Admin)</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mật khẩu</label>
+                    <input type="password" id="login-password" class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nhập mật khẩu...">
+                    <p id="login-error" class="text-rose-500 text-xs font-medium mt-2 hidden"><i class="fas fa-exclamation-circle mr-1"></i> Mật khẩu sai!</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.hideModal('login-modal')" class="flex-1 py-2 rounded-lg font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200">Hủy</button>
+                    <button onclick="window.handleLogin()" class="flex-1 py-2 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md">Đăng nhập</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="reset-data-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hidden-fade px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6">
+            <div class="w-16 h-16 bg-rose-100 rounded-full mx-auto flex items-center justify-center text-rose-500 text-3xl mb-4">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Làm mới tuần mới?</h3>
+            <p class="text-gray-500 text-sm mb-6">Tất cả điểm và LỊCH SỬ vi phạm sẽ bị xóa sạch, về mức 100 điểm.</p>
+            <div class="flex gap-3">
+                <button onclick="window.hideModal('reset-data-modal')" class="flex-1 py-2 rounded-lg font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200">Hủy bỏ</button>
+                <button onclick="window.executeResetData()" class="flex-1 py-2 rounded-lg font-semibold text-white bg-rose-500 hover:bg-rose-600 shadow-md">Xóa điểm</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="alert-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hidden-fade px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden text-center p-6">
+            <div id="alert-icon" class="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center text-green-500 text-3xl mb-4">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 id="alert-title" class="text-xl font-bold text-gray-800 mb-2">Thành công!</h3>
+            <p id="alert-message" class="text-gray-500 text-sm mb-6">Thao tác đã được thực hiện.</p>
+            <button onclick="window.hideModal('alert-modal')" class="w-full py-2 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-md">Đóng</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, initializeFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 1. DANH SÁCH TIÊU CHÍ (BẠN CÓ THỂ SỬA Ở ĐÂY)
+        // ==========================================
+        const criteriaData = {
+            positive: [
+                { id: 'p1', name: 'Thuộc bài, làm bài đúng', points: 10 },
+                { id: 'p2', name: 'Đạt điểm 9, 10', points: 10 },
+                { id: 'p3', name: 'Đạt điểm 8', points: 5 },
+                { id: 'p5', name: 'Giơ tay phát biểu (ĐÚNG)', points: 5 },
+                { id: 'p6', name: 'Giơ tay phát biểu (SAI)', points: 2 }
+            ],
+            negative: [
+                { id: 'n1', name: 'Đi học trễ', points: -10 },
+                { id: 'n2', name: 'Không thuộc bài, không làm bài đầy đủ', points: -10 },
+                { id: 'n3', name: 'Làm việc riêng, nói chuyện trong giờ học', points: -10 },
+                { id: 'n4', name: 'Ăn trong lớp, đem ly nước vào lớp', points: -10 },
+                { id: 'n5', name: 'Vệ sinh không sạch, không đổ/thay bọc rác, giặt đồ lau bảng', points: -10 },
+                { id: 'n6', name: 'Nhiệm vụ của tổ nhưng không cùng làm', points: -10 },
+                { id: 'n7', name: 'Đồng phục không đúng qui định (sandal, bảng tên)', points: -5 },
+                { id: 'n8', name: 'Xả rác trong lớp, rác còn dưới hộc bàn', points: -5 }
+            ]
+        };
+
+        // --- 2. CONFIG & STATE ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'classroom-tracker-v4';
+        let firebaseConfig = {};
+        try { firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {}; } catch(e) {}
+
+        let app, db, auth, currentUser;
+        let userRole = 'guest';
+
+        const defaultDataState = {
+            groups: [
+                { id: 1, name: 'Tổ 1', score: 100, logs: [] }, { id: 2, name: 'Tổ 2', score: 100, logs: [] },
+                { id: 3, name: 'Tổ 3', score: 100, logs: [] }, { id: 4, name: 'Tổ 4', score: 100, logs: [] }
+            ],
+            students: [
+                { id: 1, name: 'Nguyễn Văn An', group: 1, score: 100, logs: [] }, { id: 2, name: 'Trần Thị Bích', group: 1, score: 100, logs: [] }, { id: 3, name: 'Lê Hoàng Cường', group: 1, score: 100, logs: [] }, { id: 4, name: 'Đặng Quốc Bảo', group: 1, score: 100, logs: [] },
+                { id: 5, name: 'Phạm Văn Duy', group: 2, score: 100, logs: [] }, { id: 6, name: 'Hoàng Minh Tuấn', group: 2, score: 100, logs: [] }, { id: 7, name: 'Đỗ Thảo Vy', group: 2, score: 100, logs: [] }, { id: 8, name: 'Nguyễn Thị Oanh', group: 2, score: 100, logs: [] },
+                { id: 9, name: 'Bùi Đức Hùng', group: 3, score: 100, logs: [] }, { id: 10, name: 'Ngô Tố Uyên', group: 3, score: 100, logs: [] }, { id: 11, name: 'Vũ Hải Yến', group: 3, score: 100, logs: [] }, { id: 12, name: 'Trần Tuấn Kiệt', group: 3, score: 100, logs: [] },
+                { id: 13, name: 'Đặng Mai Phương', group: 4, score: 100, logs: [] }, { id: 14, name: 'Lý Tiến Đạt', group: 4, score: 100, logs: [] }, { id: 15, name: 'Châu Trọng Nghĩa', group: 4, score: 100, logs: [] }, { id: 16, name: 'Đinh Lê Na', group: 4, score: 100, logs: [] },
+            ]
+        };
+
+        const defaultPasswordsState = { '1': 'to1', '2': 'to2', '3': 'to3', '4': 'to4', 'admin': 'admin' };
+        let appState = JSON.parse(JSON.stringify(defaultDataState));
+        let passwordsState = JSON.parse(JSON.stringify(defaultPasswordsState));
+        
+        // Khôi phục dữ liệu từ LocalStorage để chống lỗi khi offline/mất kết nối
+        try {
+            const localData = localStorage.getItem('thidualop_data');
+            if (localData) appState = JSON.parse(localData);
+        } catch(e) {}
+
+        let docRefData, docRefPass;
+
+        // Biến lưu trạng thái Đánh giá hiện tại
+        let currentEvalTarget = { type: null, id: null };
+        let currentEvalPoints = 0;
+        let currentSelectedCriteria = [];
+        let currentCriteriaCounts = {};
+
+        // --- 3. FIREBASE INIT ---
+        async function initApp() {
+            if(Object.keys(firebaseConfig).length === 0) {
+                renderAll();
+                return;
+            }
+            app = initializeApp(firebaseConfig); 
+            // Fix: Dùng force long polling để tránh lỗi timeout ở môi trường mạng bị chặn
+            db = initializeFirestore(app, { experimentalForceLongPolling: true }); 
+            auth = getAuth(app);
+            try {
+                if (typeof __initial_auth_token !== 'undefined') { await signInWithCustomToken(auth, __initial_auth_token); } 
+                else { await signInAnonymously(auth); }
+                currentUser = auth.currentUser;
+                
+                docRefData = doc(db, 'artifacts', appId, 'public', 'data', 'classData', 'state');
+                docRefPass = doc(db, 'artifacts', appId, 'public', 'data', 'passwords', 'config');
+                
+                onSnapshot(docRefData, (docSnap) => {
+                    if (docSnap.exists()) { appState = docSnap.data(); renderAll(); } 
+                    else if (currentUser) { setDoc(docRefData, defaultDataState).catch(console.error); }
+                }, console.error);
+
+                onSnapshot(docRefPass, (docSnap) => {
+                    if (docSnap.exists()) passwordsState = docSnap.data();
+                    else if (currentUser) setDoc(docRefPass, defaultPasswordsState).catch(console.error);
+                }, console.error);
+            } catch (error) { console.error("Auth error:", error); }
+        }
+
+        async function pushDataToFirebase() {
+            // Luôn lưu local dự phòng
+            try { localStorage.setItem('thidualop_data', JSON.stringify(appState)); } catch(e){}
+            
+            if (!currentUser || !docRefData) return;
+            try { await setDoc(docRefData, appState); } catch (e) { console.error("Lỗi đồng bộ:", e); }
+        }
+
+        function hasEditPermission(groupId) {
+            if (userRole === 'admin') return true;
+            if (userRole === groupId) return true;
+            return false;
+        }
+
+        function updateHeaderUI() {
+            const userInfo = document.getElementById('user-info');
+            const btnLogin = document.getElementById('btn-login');
+            const accountActions = document.getElementById('account-actions');
+            const btnReset = document.getElementById('btn-reset');
+
+            if (userRole === 'guest') {
+                userInfo.innerHTML = `<i class="fas fa-eye text-blue-300 mr-2"></i> Chế độ Khách`;
+                btnLogin.classList.remove('hidden'); accountActions.classList.add('hidden');
+            } else {
+                btnLogin.classList.add('hidden'); accountActions.classList.remove('hidden');
+                if (userRole === 'admin') {
+                    userInfo.innerHTML = `<i class="fas fa-user-shield text-yellow-300 mr-2"></i> Quản Trị Viên`;
+                    btnReset.classList.remove('hidden');
+                } else {
+                    userInfo.innerHTML = `<i class="fas fa-user-edit text-emerald-300 mr-2"></i> Tổ Trưởng ${userRole}`;
+                    btnReset.classList.add('hidden');
+                }
+            }
+            renderAll();
+        }
+
+        // --- 4. EVALUATION & HISTORY LOGIC ---
+
+        // Render danh sách checklist vào Modal
+        function buildChecklistHTML(criteriaList, type) {
+            return criteriaList.map(c => `
+                <div class="flex items-center justify-between p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition mb-2 bg-white shadow-sm">
+                    <div class="flex-grow pr-3">
+                        <p class="text-sm font-semibold text-gray-800">${c.name}</p>
+                        <p class="text-xs font-bold mt-1 ${type === 'pos' ? 'text-blue-600' : 'text-rose-600'}">
+                            ${c.points > 0 ? '+' : ''}${c.points} đ / lượt
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 border border-gray-200 rounded-lg p-1">
+                        <button type="button" onclick="window.updateCriteriaCount('${c.id}', -1)" class="w-8 h-8 rounded text-gray-500 font-bold hover:bg-gray-200 flex items-center justify-center transition focus:outline-none">
+                            <i class="fas fa-minus text-xs"></i>
+                        </button>
+                        <span id="count-${c.id}" class="w-5 text-center font-bold text-gray-800 text-sm">0</span>
+                        <button type="button" onclick="window.updateCriteriaCount('${c.id}', 1)" class="w-8 h-8 rounded ${type === 'pos' ? 'bg-blue-50 text-blue-600 hover:bg-blue-200' : 'bg-rose-50 text-rose-600 hover:bg-rose-200'} font-bold flex items-center justify-center transition focus:outline-none">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.updateCriteriaCount = function(id, delta) {
+            if (!currentCriteriaCounts[id]) currentCriteriaCounts[id] = 0;
+            currentCriteriaCounts[id] += delta;
+            if (currentCriteriaCounts[id] < 0) currentCriteriaCounts[id] = 0;
+            
+            document.getElementById(`count-${id}`).innerText = currentCriteriaCounts[id];
+            window.calculatePreviewPoints();
+        };
+
+        window.openEvaluationModal = function(type, id) {
+            currentEvalTarget = { type, id };
+            currentCriteriaCounts = {}; // Reset counts
+            let targetObj = null;
+            if (type === 'group') targetObj = appState.groups.find(g => g.id === id);
+            else targetObj = appState.students.find(s => s.id === id);
+            
+            if (!targetObj) return;
+
+            document.getElementById('eval-target-name').innerText = targetObj.name;
+            
+            // Build Checklist
+            document.getElementById('eval-content-pos').innerHTML = buildChecklistHTML(criteriaData.positive, 'pos');
+            document.getElementById('eval-content-neg').innerHTML = buildChecklistHTML(criteriaData.negative, 'neg');
+            
+            // Reset Preview
+            window.calculatePreviewPoints();
+            window.switchEvalTab('positive');
+            window.showModal('evaluation-modal');
+        };
+
+        window.switchEvalTab = function(tab) {
+            const posTab = document.getElementById('tab-eval-pos');
+            const negTab = document.getElementById('tab-eval-neg');
+            const posContent = document.getElementById('eval-content-pos');
+            const negContent = document.getElementById('eval-content-neg');
+
+            if (tab === 'positive') {
+                posTab.classList.add('border-b-2', 'border-blue-600', 'bg-blue-50', 'text-blue-700');
+                posTab.classList.remove('text-gray-500');
+                negTab.classList.remove('border-b-2', 'border-rose-600', 'bg-rose-50', 'text-rose-600');
+                negTab.classList.add('text-gray-500');
+                posContent.classList.remove('hidden'); negContent.classList.add('hidden');
+            } else {
+                negTab.classList.add('border-b-2', 'border-rose-600', 'bg-rose-50', 'text-rose-600');
+                negTab.classList.remove('text-gray-500');
+                posTab.classList.remove('border-b-2', 'border-blue-600', 'bg-blue-50', 'text-blue-700');
+                posTab.classList.add('text-gray-500');
+                negContent.classList.remove('hidden'); posContent.classList.add('hidden');
+            }
+        };
+
+        window.calculatePreviewPoints = function() {
+            let total = 0;
+            currentSelectedCriteria = [];
+            
+            const allCriteria = [...criteriaData.positive, ...criteriaData.negative];
+            allCriteria.forEach(c => {
+                const count = currentCriteriaCounts[c.id] || 0;
+                if (count > 0) {
+                    const pointsForThis = count * c.points;
+                    total += pointsForThis;
+                    currentSelectedCriteria.push({ 
+                        name: count > 1 ? `${c.name} (x${count})` : c.name, 
+                        points: pointsForThis 
+                    });
+                }
+            });
+
+            currentEvalPoints = total;
+            const displayEl = document.getElementById('eval-total-change');
+            displayEl.innerText = (total > 0 ? '+' : '') + total;
+            displayEl.className = total > 0 ? 'text-lg font-black text-blue-600 ml-1' : (total < 0 ? 'text-lg font-black text-rose-600 ml-1' : 'text-lg font-black text-gray-600 ml-1');
+        };
+
+        window.submitEvaluation = function() {
+            if (currentSelectedCriteria.length === 0) {
+                window.hideModal('evaluation-modal'); return;
+            }
+
+            let targetObj = null;
+            if (currentEvalTarget.type === 'group') {
+                targetObj = appState.groups.find(g => g.id === currentEvalTarget.id);
+            } else {
+                targetObj = appState.students.find(s => s.id === currentEvalTarget.id);
+            }
+
+            if (targetObj) {
+                // Đảm bảo có array logs (tương thích dữ liệu cũ)
+                if (!targetObj.logs) targetObj.logs = [];
+
+                // Cập nhật điểm
+                targetObj.score += currentEvalPoints;
+
+                // Thêm lịch sử
+                const dateStr = new Date().toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+                
+                currentSelectedCriteria.forEach(item => {
+                    targetObj.logs.unshift({ // unshift để đẩy lên đầu
+                        time: dateStr,
+                        name: item.name,
+                        points: item.points
+                    });
+                });
+                
+                // Giữ tối đa 15 lịch sử gần nhất để ko nặng data
+                if (targetObj.logs.length > 15) targetObj.logs = targetObj.logs.slice(0, 15);
+
+                pushDataToFirebase();
+            }
+
+            window.hideModal('evaluation-modal');
+        };
+
+        // Xem lịch sử
+        window.openHistoryModal = function(type, id) {
+            let targetObj = null;
+            if (type === 'group') targetObj = appState.groups.find(g => g.id === id);
+            else targetObj = appState.students.find(s => s.id === id);
+
+            if (!targetObj) return;
+
+            document.getElementById('history-target-name').innerText = targetObj.name;
+            const listEl = document.getElementById('history-list');
+            
+            const logs = targetObj.logs || [];
+            if (logs.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-gray-400 py-6 italic">Chưa có ghi nhận nào.</div>`;
+            } else {
+                listEl.innerHTML = logs.map(log => `
+                    <li class="relative">
+                        <div class="absolute -left-[23px] top-1 w-3 h-3 rounded-full ${log.points > 0 ? 'bg-blue-500' : 'bg-rose-500'} border-2 border-white"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">${log.name}</p>
+                                <p class="text-xs text-gray-400">${log.time}</p>
+                            </div>
+                            <span class="font-bold text-sm ${log.points > 0 ? 'text-blue-600' : 'text-rose-600'} bg-gray-100 px-2 py-0.5 rounded">
+                                ${log.points > 0 ? '+' : ''}${log.points}
+                            </span>
+                        </div>
+                    </li>
+                `).join('');
+            }
+
+            window.showModal('history-modal');
+        }
+
+        // --- 5. RENDER UI ---
+        function renderGroups() {
+            const container = document.getElementById('groups-container');
+            if(!container) return;
+            container.innerHTML = '';
+
+            let maxScore = -9999;
+            appState.groups.forEach(g => { if(g.score > maxScore) maxScore = g.score; });
+
+            appState.groups.forEach(group => {
+                const isTop = group.score === maxScore && appState.groups.some(g => g.score !== maxScore);
+                const canEdit = hasEditPermission(group.id);
+                
+                const editBtn = canEdit ? `
+                    <button onclick="window.openEvaluationModal('group', ${group.id})" class="w-10 h-10 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded-full flex items-center justify-center transition shadow-sm" title="Đánh giá">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                ` : ``;
+
+                container.innerHTML += `
+                <div class="hover-card bg-white rounded-2xl overflow-hidden border ${canEdit ? 'border-blue-400 shadow-md ring-2 ring-blue-100' : 'border-gray-200'} relative flex flex-col">
+                    ${isTop ? `<div class="absolute -right-12 top-6 bg-yellow-400 text-yellow-900 font-bold py-1 px-12 transform rotate-45 shadow-sm text-xs z-10"><i class="fas fa-star"></i> DẪN ĐẦU</div>` : ''}
+                    <div class="bg-blue-800 py-3 text-center relative">
+                        <h3 class="text-lg font-bold text-white uppercase tracking-wider">${group.name}</h3>
+                    </div>
+                    <div class="p-5 flex flex-col items-center flex-grow">
+                        <div class="text-5xl font-black ${group.score >= 100 ? 'text-blue-600' : 'text-red-500'} my-3">${group.score}</div>
+                        <div class="text-xs text-gray-400 uppercase tracking-widest font-bold mb-4">Điểm tuần</div>
+                        
+                        <div class="flex gap-3 mt-auto">
+                            <button onclick="window.openHistoryModal('group', ${group.id})" class="w-10 h-10 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-full flex items-center justify-center transition shadow-sm" title="Lịch sử">
+                                <i class="fas fa-history"></i>
+                            </button>
+                            ${editBtn}
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderStudentsView() {
+            const tdContainer = document.getElementById('tuyenduong-container');
+            const stContainer = document.getElementById('students-by-group-container');
+            if(tdContainer) tdContainer.innerHTML = '';
+            if(stContainer) stContainer.innerHTML = '';
+
+            for (let groupId = 1; groupId <= 4; groupId++) {
+                let groupStudents = appState.students.filter(s => s.group === groupId);
+                if (groupStudents.length === 0) continue;
+
+                // Top 1
+                const topStudent = groupStudents.reduce((max, s) => (s.score > max.score) ? s : max);
+                tdContainer.innerHTML += `
+                <div class="bg-gradient-to-br from-white to-blue-50 rounded-xl p-4 border border-blue-100 flex items-center relative shadow-sm hover-card">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-xl shadow-sm border border-white mr-4 flex-shrink-0">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">Top 1 - Tổ ${groupId}</div>
+                        <h3 class="text-sm font-bold text-gray-800 line-clamp-1">${topStudent.name}</h3>
+                        <div class="text-lg font-black text-blue-700">${topStudent.score}</div>
+                    </div>
+                </div>`;
+
+                // Table
+                const canEdit = hasEditPermission(groupId);
+                groupStudents.sort((a, b) => b.score - a.score);
+                
+                let rowsHtml = '';
+                groupStudents.forEach(student => {
+                    const scoreColor = student.score >= 100 ? 'text-blue-700 bg-blue-50' : 'text-rose-600 bg-rose-50';
+                    
+                    const editBtn = canEdit ? `
+                        <button onclick="window.openEvaluationModal('student', ${student.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white transition">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                    ` : ``;
+
+                    rowsHtml += `
+                        <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors">
+                            <td class="px-3 py-3 whitespace-nowrap">
+                                <span class="text-sm font-semibold text-gray-700">${student.name}</span>
+                            </td>
+                            <td class="px-2 py-3 whitespace-nowrap text-center">
+                                <span class="px-3 py-1 font-bold rounded-lg text-sm ${scoreColor}">${student.score}</span>
+                            </td>
+                            <td class="px-2 py-3 text-right flex justify-end gap-2">
+                                <button onclick="window.openHistoryModal('student', ${student.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition" title="Xem lịch sử">
+                                    <i class="fas fa-book-open"></i>
+                                </button>
+                                ${editBtn}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                stContainer.innerHTML += `
+                <div class="bg-white rounded-xl shadow-sm border ${canEdit ? 'border-blue-400 ring-1 ring-blue-100' : 'border-gray-200'} overflow-hidden">
+                    <div class="${canEdit ? 'bg-blue-50 text-blue-800' : 'bg-gray-50 text-gray-600'} px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="font-bold uppercase text-sm flex items-center">
+                            <i class="fas ${canEdit ? 'fa-user-edit' : 'fa-users'} mr-2"></i> Tổ ${groupId} ${canEdit ? '(Đang Quản Lý)' : ''}
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+            }
+        }
+
+        function renderAll() { renderGroups(); renderStudentsView(); }
+
+        // --- 6. UTILS & AUTH LOGIC ---
+        window.switchTab = function(tabId) {
+            document.getElementById('to-view').classList.add('hidden');
+            document.getElementById('canhan-view').classList.add('hidden');
+            const unactive = ['text-gray-500', 'hover:text-blue-600', 'hover:bg-blue-50', 'bg-transparent', 'shadow-none'];
+            const active = ['bg-blue-100', 'text-blue-700', 'shadow-sm'];
+            
+            document.getElementById('tab-to').classList.remove(...active);
+            document.getElementById('tab-to').classList.add(...unactive);
+            document.getElementById('tab-canhan').classList.remove(...active);
+            document.getElementById('tab-canhan').classList.add(...unactive);
+
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(tabId).classList.add('block');
+            
+            const activeTab = tabId === 'to-view' ? document.getElementById('tab-to') : document.getElementById('tab-canhan');
+            activeTab.classList.remove(...unactive);
+            activeTab.classList.add(...active);
+        };
+
+        window.showModal = (id) => { const m = document.getElementById(id); if(m) { m.classList.remove('hidden-fade'); m.classList.add('visible-fade'); } };
+        window.hideModal = (id) => { const m = document.getElementById(id); if(m) { m.classList.remove('visible-fade'); m.classList.add('hidden-fade'); } };
+
+        window.handleLogin = () => {
+            const roleSelect = document.getElementById('login-role').value;
+            const passwordInput = document.getElementById('login-password').value;
+            const errorMsg = document.getElementById('login-error');
+            
+            if (passwordInput === passwordsState[roleSelect]) {
+                userRole = roleSelect === 'admin' ? 'admin' : parseInt(roleSelect);
+                updateHeaderUI();
+                window.hideModal('login-modal');
+                errorMsg.classList.add('hidden');
+                document.getElementById('login-password').value = '';
+            } else { errorMsg.classList.remove('hidden'); }
+        };
+
+        window.handleLogout = () => { userRole = 'guest'; updateHeaderUI(); };
+
+        window.executeResetData = function() {
+            if (userRole !== 'admin') return;
+            appState = JSON.parse(JSON.stringify(defaultDataState));
+            pushDataToFirebase();
+            window.hideModal('reset-data-modal');
+        };
+
+        renderAll();
+        initApp();
+    </script>
+</body>
+</html>
