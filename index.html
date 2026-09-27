@@ -120,7 +120,6 @@
 
     <!-- ================= TAB 2: CÁ NHÂN ================= -->
     <section id="tabStudentsView" class="hidden space-y-8">
-      <!-- Bảng Vinh Danh -->
       <div class="bg-gradient-to-br from-amber-500 to-yellow-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div class="absolute -right-6 -bottom-6 text-white/20 text-9xl pointer-events-none transform -rotate-12">
           <i class="fa-solid fa-trophy"></i>
@@ -137,7 +136,6 @@
         </div>
       </div>
 
-      <!-- Danh sách học sinh 4 Tổ -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="studentGroupsTableContainer"></div>
     </section>
   </main>
@@ -300,22 +298,22 @@
 
   <script>
     // =========================================================================
-    // DÁN CẤU HÌNH FIREBASE CỦA BẠN VÀO ĐÂY (THAY THẾ CÁC DÒNG DƯỚI)
+    // ĐÃ GẮN SẴN CẤU HÌNH FIREBASE DỰ ÁN THIDUA11A1 CỦA BẠN
     // =========================================================================
     const firebaseConfig = {
-      apiKey: "DAN_API_KEY_CUA_BAN_VAO_DAY",
-      authDomain: "DAN_AUTH_DOMAIN_VAO_DAY",
-      projectId: "DAN_PROJECT_ID_VAO_DAY",
-      storageBucket: "DAN_STORAGE_BUCKET_VAO_DAY",
-      messagingSenderId: "DAN_MESSAGING_SENDER_ID_VAO_DAY",
-      appId: "DAN_APP_ID_VAO_DAY"
+      apiKey: "AIzaSyAspUtloYgOtVZMrHb-x6V-W_PipWy-sKU",
+      authDomain: "thidua11a1.firebaseapp.com",
+      projectId: "thidua11a1",
+      storageBucket: "thidua11a1.firebasestorage.app",
+      messagingSenderId: "680495242622",
+      appId: "1:680495242622:web:a78a5d8c04c91cbeb1672f",
+      measurementId: "G-6QR06S1MHE"
     };
 
     let db = null;
     let docRef = null;
     let isCloudConnected = false;
 
-    // --- 1. HIỆU ỨNG TOAST TỰ TẠO ---
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
       const msgEl = document.getElementById('toastMessage');
@@ -353,11 +351,10 @@
         dot.className = "inline-block w-1.5 h-1.5 rounded-full bg-rose-400";
         headerText.innerText = message || "Chế độ lưu cục bộ (Chưa đồng bộ)";
         footerText.className = "text-rose-500 flex items-center gap-1.5 font-semibold";
-        footerText.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message || 'Chưa cấu hình Firebase - Chỉ lưu trên máy này'}`;
+        footerText.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message || 'Hãy bấm Publish ở tab Rules trên Firebase'}`;
       }
     }
 
-    // --- 2. TIÊU CHÍ NỘI QUY 11A1 ---
     const CRITERIA_POSITIVE = [
       { id: 'pos_phatbieu_dung', name: 'Giơ tay phát biểu (ĐÚNG)', points: 5 },
       { id: 'pos_phatbieu_sai', name: 'Giơ tay phát biểu (SAI)', points: 2 },
@@ -377,7 +374,6 @@
       { id: 'neg_xarac_hocban', name: 'Xả rác trong lớp, còn rác dưới hộc bàn', points: -5 }
     ];
 
-    // --- 3. STATE VÀ DỮ LIỆU LỚP 11A1 ĐÃ SẮP XẾP A-Z ---
     const DEFAULT_PASSWORDS = { to1: 'to1', to2: 'to2', to3: 'to3', to4: 'to4', admin: 'admin' };
     let appData = null;
     let currentUserRole = null; 
@@ -394,7 +390,6 @@
           { id: 3, name: 'Tổ 3', score: 100, history: [] }, { id: 4, name: 'Tổ 4', score: 100, history: [] }
         ],
         students: [
-          // Tổ 1
           { id: 101, name: 'Kim Yến Duyên', group: 1, score: 0, history: [] },
           { id: 102, name: 'Cao Ngô Khánh Hà', group: 1, score: 0, history: [] },
           { id: 103, name: 'Kim Văn Huy', group: 1, score: 0, history: [] },
@@ -403,7 +398,6 @@
           { id: 106, name: 'Trì Vủ Phong', group: 1, score: 0, history: [] },
           { id: 107, name: 'Kim Thị SaPhia', group: 1, score: 0, history: [] },
           { id: 108, name: 'Lê Thị Như Ý', group: 1, score: 0, history: [] },
-          // Tổ 2
           { id: 201, name: 'Kim Ngọc Đỉnh', group: 2, score: 0, history: [] },
           { id: 202, name: 'Sơn Nguyễn Bảo Lam', group: 2, score: 0, history: [] },
           { id: 203, name: 'Tăng Phúc Nguyên', group: 2, score: 0, history: [] },
@@ -413,7 +407,6 @@
           { id: 207, name: 'Nguyễn Ngọc Minh Trang', group: 2, score: 0, history: [] },
           { id: 208, name: 'Nhan Hoàng Vũ', group: 2, score: 0, history: [] },
           { id: 209, name: 'Trầm Hải Yến', group: 2, score: 0, history: [] },
-          // Tổ 3
           { id: 301, name: 'Sơn Thị Thanh Ái', group: 3, score: 0, history: [] },
           { id: 302, name: 'Thạch Thị Hữu Ái', group: 3, score: 0, history: [] },
           { id: 303, name: 'Ngô Ngọc Tùng Dương', group: 3, score: 0, history: [] },
@@ -423,7 +416,6 @@
           { id: 307, name: 'Trần Thị Ngọc Phấn', group: 3, score: 0, history: [] },
           { id: 308, name: 'Võ Kim Phúc', group: 3, score: 0, history: [] },
           { id: 309, name: 'Trầm Minh Trí', group: 3, score: 0, history: [] },
-          // Tổ 4
           { id: 401, name: 'Lâm Thiên Ân', group: 4, score: 0, history: [] },
           { id: 402, name: 'Kim Ngọc Bền', group: 4, score: 0, history: [] },
           { id: 403, name: 'Lý Minh Đạt', group: 4, score: 0, history: [] },
@@ -450,22 +442,14 @@
     }
 
     function initDataAndSync() {
-      // 1. Nạp dữ liệu tạm từ bộ nhớ máy để hiển thị ngay lập tức
       loadLocalBackup();
       renderAll();
-
-      // 2. Kiểm tra xem đã điền firebaseConfig thật chưa
-      if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "DAN_API_KEY_CUA_BAN_VAO_DAY") {
-        setSyncStatus(false, "Chưa gắn mã firebaseConfig - Chỉ lưu cục bộ");
-        return;
-      }
 
       try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         docRef = db.collection('thidua_11a1').doc('data_v5');
 
-        // Lắng nghe dữ liệu thời gian thực từ đám mây
         docRef.onSnapshot((doc) => {
           isCloudConnected = true;
           setSyncStatus(true);
@@ -475,13 +459,12 @@
             localStorage.setItem('thidua_11a1_v5', JSON.stringify(appData));
             renderAll();
           } else {
-            // Lần đầu tiên tạo dữ liệu trên Cloud: đẩy dữ liệu hiện có lên Cloud
             docRef.set(appData);
           }
         }, (err) => {
           console.error("Lỗi đồng bộ Firebase:", err);
           isCloudConnected = false;
-          setSyncStatus(false, "Lỗi quyền truy cập Firebase (Kiểm tra tab Rules)");
+          setSyncStatus(false, "Hãy bấm Publish ở tab Rules trên Firebase");
         });
       } catch (e) {
         console.error("Lỗi khởi tạo Firebase:", e);
@@ -490,10 +473,8 @@
     }
 
     function saveData() {
-      // Lưu đệm vào máy
       localStorage.setItem('thidua_11a1_v5', JSON.stringify(appData));
       
-      // Đẩy lên đám mây Firebase để mọi máy khác tự động cập nhật
       if (docRef && isCloudConnected) {
         docRef.set(appData).catch(err => {
           console.error("Không thể lưu lên Cloud:", err);
@@ -502,7 +483,6 @@
       }
     }
 
-    // --- 4. RENDER GIAO DIỆN ---
     function canEdit(id, type) {
       if (currentUserRole === 'admin') return true;
       if (type === 'group' && currentUserRole === 'to' + id) return true;
@@ -669,7 +649,6 @@
       }
     }
 
-    // --- 5. LOGIC MODAL & TÍNH TOÁN ---
     window.switchTab = function(tab) {
       document.getElementById('tabGroupsView').classList.toggle('hidden', tab !== 'groups');
       document.getElementById('tabStudentsView').classList.toggle('hidden', tab === 'groups');
@@ -801,7 +780,6 @@
       
       const timeStr = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'});
       
-      // Tìm lại đối tượng trực tiếp trên appData mới nhất để tránh xung đột khi nhiều người nhập
       const targetArr = currentTargetType === 'group' ? appData.groups : appData.students;
       const latestTarget = targetArr.find(x => x.id === currentTarget.id);
       if (!latestTarget) return;
