@@ -10,6 +10,10 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
+  <!-- Firebase SDK (Compat) để đồng bộ thời gian thực -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap');
     
@@ -56,8 +60,8 @@
             <span class="text-[10px] bg-yellow-400 text-blue-950 font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">K17</span>
           </h1>
           <p class="text-[11px] text-blue-100 flex items-center gap-1.5 mt-0.5 font-medium">
-            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            Hệ thống quản lý nề nếp & học tập
+            <span id="syncDot" class="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="syncStatusHeader">Đang kết nối máy chủ...</span>
           </p>
         </div>
       </div>
@@ -111,14 +115,11 @@
 
     <!-- ================= TAB 1: TỔ ================= -->
     <section id="tabGroupsView" class="space-y-6">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="groupCardsContainer">
-        <!-- Render Javascript -->
-      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="groupCardsContainer"></div>
     </section>
 
     <!-- ================= TAB 2: CÁ NHÂN ================= -->
     <section id="tabStudentsView" class="hidden space-y-8">
-      
       <!-- Bảng Vinh Danh -->
       <div class="bg-gradient-to-br from-amber-500 to-yellow-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div class="absolute -right-6 -bottom-6 text-white/20 text-9xl pointer-events-none transform -rotate-12">
@@ -132,24 +133,20 @@
           <h2 class="text-2xl sm:text-3xl font-black tracking-tight drop-shadow-md">Top 4 Cá Nhân Xuất Sắc Nhất</h2>
           <p class="text-xs sm:text-sm text-yellow-50 mt-1 max-w-xl font-medium">Tuyên dương các thành viên dẫn đầu điểm số tại mỗi tổ trong tuần thi đua.</p>
           
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6" id="topHonorContainer">
-            <!-- Render Javascript -->
-          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6" id="topHonorContainer"></div>
         </div>
       </div>
 
       <!-- Danh sách học sinh 4 Tổ -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="studentGroupsTableContainer">
-        <!-- Render Javascript -->
-      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="studentGroupsTableContainer"></div>
     </section>
   </main>
 
   <footer class="bg-white border-t border-slate-200 py-5 mt-auto text-center text-xs text-slate-500 font-medium">
     <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
       <p>© 2026 Bản quyền Lớp 11A1.</p>
-      <p class="text-slate-400 flex items-center gap-1">
-        <i class="fa-solid fa-cloud-arrow-up"></i> Dữ liệu tự động lưu cục bộ
+      <p id="footerSyncText" class="text-slate-400 flex items-center gap-1.5">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Đang kiểm tra kết nối đám mây...
       </p>
     </div>
   </footer>
@@ -157,8 +154,6 @@
   <!-- ================= MODAL: ĐÁNH GIÁ TIÊU CHÍ ================= -->
   <div id="evalModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden transform scale-95 transition-transform duration-200" id="evalModalContent">
-      
-      <!-- Header -->
       <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/80 shrink-0">
         <div>
           <span class="text-[10px] font-black uppercase tracking-widest text-blue-600" id="evalTargetCategory">Phiếu Đánh Giá</span>
@@ -169,7 +164,6 @@
         </button>
       </div>
 
-      <!-- Tabs -->
       <div class="p-3 bg-white border-b border-slate-100 flex gap-2 shrink-0">
         <button id="btnTabPositive" onclick="switchEvalTab('positive')" class="flex-1 py-2.5 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm">
           <i class="fa-solid fa-circle-plus"></i> Điểm Cộng
@@ -184,12 +178,8 @@
         <span>Toàn bộ kết quả (Cộng / Trừ) sẽ được tự động đồng bộ sang Tổng điểm của Tổ.</span>
       </div>
 
-      <!-- Danh sách tiêu chí -->
-      <div class="p-4 overflow-y-auto custom-scroll flex-grow space-y-2.5 bg-slate-50/30" id="criteriaListContainer">
-        <!-- Render Javascript -->
-      </div>
+      <div class="p-4 overflow-y-auto custom-scroll flex-grow space-y-2.5 bg-slate-50/30" id="criteriaListContainer"></div>
 
-      <!-- Footer -->
       <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0">
         <div>
           <span class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Tổng điểm đổi:</span>
@@ -204,7 +194,6 @@
           </button>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -220,10 +209,7 @@
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-
-      <div class="p-4 overflow-y-auto custom-scroll flex-grow divide-y divide-slate-100" id="historyListContainer">
-        <!-- Render Javascript -->
-      </div>
+      <div class="p-4 overflow-y-auto custom-scroll flex-grow divide-y divide-slate-100" id="historyListContainer"></div>
     </div>
   </div>
 
@@ -239,7 +225,6 @@
         </button>
       </div>
 
-      <!-- Form Đăng Nhập -->
       <div id="loginView" class="p-5 space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Tài khoản</label>
@@ -262,7 +247,6 @@
         </button>
       </div>
 
-      <!-- Form Đổi Mật Khẩu -->
       <div id="loggedInView" class="p-5 space-y-4 hidden">
         <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 flex items-center gap-3">
           <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg shrink-0">
@@ -315,7 +299,23 @@
   </div>
 
   <script>
-    // --- 1. HIỆU ỨNG TOAST TỰ TẠO (THAY THẾ ALERT) ---
+    // =========================================================================
+    // DÁN CẤU HÌNH FIREBASE CỦA BẠN VÀO ĐÂY (THAY THẾ CÁC DÒNG DƯỚI)
+    // =========================================================================
+    const firebaseConfig = {
+      apiKey: "DAN_API_KEY_CUA_BAN_VAO_DAY",
+      authDomain: "DAN_AUTH_DOMAIN_VAO_DAY",
+      projectId: "DAN_PROJECT_ID_VAO_DAY",
+      storageBucket: "DAN_STORAGE_BUCKET_VAO_DAY",
+      messagingSenderId: "DAN_MESSAGING_SENDER_ID_VAO_DAY",
+      appId: "DAN_APP_ID_VAO_DAY"
+    };
+
+    let db = null;
+    let docRef = null;
+    let isCloudConnected = false;
+
+    // --- 1. HIỆU ỨNG TOAST TỰ TẠO ---
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
       const msgEl = document.getElementById('toastMessage');
@@ -337,6 +337,24 @@
         container.classList.remove('translate-y-0', 'opacity-100');
         container.classList.add('-translate-y-32', 'opacity-0', 'pointer-events-none');
       }, 2500);
+    }
+
+    function setSyncStatus(online, message) {
+      const dot = document.getElementById('syncDot');
+      const headerText = document.getElementById('syncStatusHeader');
+      const footerText = document.getElementById('footerSyncText');
+
+      if (online) {
+        dot.className = "inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse";
+        headerText.innerText = "Đồng bộ thời gian thực (Trực tuyến)";
+        footerText.className = "text-emerald-600 flex items-center gap-1.5 font-semibold";
+        footerText.innerHTML = `<i class="fa-solid fa-cloud-check"></i> Đã kết nối đám mây Firebase`;
+      } else {
+        dot.className = "inline-block w-1.5 h-1.5 rounded-full bg-rose-400";
+        headerText.innerText = message || "Chế độ lưu cục bộ (Chưa đồng bộ)";
+        footerText.className = "text-rose-500 flex items-center gap-1.5 font-semibold";
+        footerText.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message || 'Chưa cấu hình Firebase - Chỉ lưu trên máy này'}`;
+      }
     }
 
     // --- 2. TIÊU CHÍ NỘI QUY 11A1 ---
@@ -419,21 +437,69 @@
       };
     }
 
-    function loadData() {
-      const raw = localStorage.getItem('thidua_11a1_v5'); // Đổi key v5 để nạp danh sách mới
+    function loadLocalBackup() {
+      const raw = localStorage.getItem('thidua_11a1_v5');
       if (raw) {
         try { 
           appData = JSON.parse(raw); 
-          // Nếu danh sách cũ bị lỗi độ dài, nạp lại
-          if (appData.students.length < 35) appData = getInitialData();
+          if (!appData.students || appData.students.length < 35) appData = getInitialData();
         } catch(e) { appData = getInitialData(); }
       } else {
         appData = getInitialData();
       }
     }
 
+    function initDataAndSync() {
+      // 1. Nạp dữ liệu tạm từ bộ nhớ máy để hiển thị ngay lập tức
+      loadLocalBackup();
+      renderAll();
+
+      // 2. Kiểm tra xem đã điền firebaseConfig thật chưa
+      if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "DAN_API_KEY_CUA_BAN_VAO_DAY") {
+        setSyncStatus(false, "Chưa gắn mã firebaseConfig - Chỉ lưu cục bộ");
+        return;
+      }
+
+      try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        docRef = db.collection('thidua_11a1').doc('data_v5');
+
+        // Lắng nghe dữ liệu thời gian thực từ đám mây
+        docRef.onSnapshot((doc) => {
+          isCloudConnected = true;
+          setSyncStatus(true);
+
+          if (doc.exists) {
+            appData = doc.data();
+            localStorage.setItem('thidua_11a1_v5', JSON.stringify(appData));
+            renderAll();
+          } else {
+            // Lần đầu tiên tạo dữ liệu trên Cloud: đẩy dữ liệu hiện có lên Cloud
+            docRef.set(appData);
+          }
+        }, (err) => {
+          console.error("Lỗi đồng bộ Firebase:", err);
+          isCloudConnected = false;
+          setSyncStatus(false, "Lỗi quyền truy cập Firebase (Kiểm tra tab Rules)");
+        });
+      } catch (e) {
+        console.error("Lỗi khởi tạo Firebase:", e);
+        setSyncStatus(false, "Cấu hình Firebase chưa hợp lệ");
+      }
+    }
+
     function saveData() {
+      // Lưu đệm vào máy
       localStorage.setItem('thidua_11a1_v5', JSON.stringify(appData));
+      
+      // Đẩy lên đám mây Firebase để mọi máy khác tự động cập nhật
+      if (docRef && isCloudConnected) {
+        docRef.set(appData).catch(err => {
+          console.error("Không thể lưu lên Cloud:", err);
+          showToast("Lỗi đồng bộ lên đám mây!", "error");
+        });
+      }
     }
 
     // --- 4. RENDER GIAO DIỆN ---
@@ -502,14 +568,11 @@
       
       for (let gId = 1; gId <= 4; gId++) {
         const studs = appData.students.filter(s => s.group === gId);
-        // Ưu tiên điểm, nếu điểm bằng nhau thì xếp ưu tiên id (A-Z do dữ liệu mẫu)
         studs.sort((a, b) => {
             if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
             return a.id - b.id; 
         });
         const top = studs[0];
-        
-        // CẬP NHẬT: Kiểm tra xem bạn đứng đầu có điểm lớn hơn 0 chưa
         const hasValidTop = top && top.score > 0;
 
         if (hasValidTop) {
@@ -529,7 +592,6 @@
             </div>
           `;
         } else {
-          // Giao diện khi chưa có ai có điểm > 0
           container.innerHTML += `
             <div class="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/10 transition cursor-default flex flex-col justify-center items-center text-center opacity-80 h-full min-h-[110px]">
               <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/20 text-white mb-2">Tổ ${gId}</span>
@@ -556,7 +618,6 @@
           const hasPerm = canEdit(gId, 'student');
           let rankBadge = `<span class="text-slate-400 font-black text-xs">${index + 1}</span>`;
           
-          // CẬP NHẬT: Chỉ hiện vương miện khi là top 1 VÀ có điểm > 0
           if (index === 0 && student.score > 0) {
             rankBadge = `<span class="w-5 h-5 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center text-[10px] font-black"><i class="fa-solid fa-crown"></i></span>`;
           }
@@ -654,6 +715,9 @@
       document.getElementById('evalTargetName').innerText = currentTarget.name;
       document.getElementById('studentGroupDeductNotice').classList.toggle('hidden', type === 'group');
       
+      document.getElementById('evalTotalScore').innerText = '0';
+      document.getElementById('evalTotalScore').className = 'text-xl font-black text-slate-800';
+
       switchEvalTab('positive');
       openModal('evalModal');
     };
@@ -718,7 +782,6 @@
       el.className = `text-xl font-black ${total > 0 ? 'text-emerald-600' : (total < 0 ? 'text-rose-600' : 'text-slate-800')}`;
     };
 
-    // ĐỒNG BỘ ĐIỂM + VÀ - LÊN TỔ & KHÔNG YÊU CẦU F5
     window.submitEvaluation = function() {
       if (!currentTarget) return;
       
@@ -738,24 +801,28 @@
       
       const timeStr = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'});
       
-      // 1. Lưu cá nhân / Tổ mục tiêu
-      currentTarget.score += totalDelta;
-      currentTarget.history.unshift({ text: details.join(', '), delta: totalDelta, time: timeStr });
+      // Tìm lại đối tượng trực tiếp trên appData mới nhất để tránh xung đột khi nhiều người nhập
+      const targetArr = currentTargetType === 'group' ? appData.groups : appData.students;
+      const latestTarget = targetArr.find(x => x.id === currentTarget.id);
+      if (!latestTarget) return;
+
+      if (!latestTarget.history) latestTarget.history = [];
+      latestTarget.score += totalDelta;
+      latestTarget.history.unshift({ text: details.join(', '), delta: totalDelta, time: timeStr });
       
-      // 2. Đồng bộ Tổ: TỔNG HỢP CẢ CỘNG LẪN TRỪ CHO TỔ KHI ĐÁNH GIÁ HỌC SINH
       if (currentTargetType === 'student') {
-        const grp = appData.groups.find(g => g.id === currentTarget.group);
+        const grp = appData.groups.find(g => g.id === latestTarget.group);
         if (grp) {
-          grp.score += totalDelta; // Includes both Positive and Negative
-          grp.history.unshift({ text: `[${currentTarget.name}] ${details.join(', ')}`, delta: totalDelta, time: timeStr });
+          if (!grp.history) grp.history = [];
+          grp.score += totalDelta;
+          grp.history.unshift({ text: `[${latestTarget.name}] ${details.join(', ')}`, delta: totalDelta, time: timeStr });
         }
       }
       
-      // 3. Thực thi Ngay lập tức
       saveData();
       renderAll(); 
       closeModal('evalModal');
-      showToast('Đã ghi nhận điểm thành công!');
+      showToast('Đã đồng bộ điểm thành công!');
     };
 
     window.openHistoryModal = function(type, id) {
@@ -860,12 +927,11 @@
       saveData();
       renderAll();
       closeModal('resetModal');
-      showToast('Đã làm mới dữ liệu!');
+      showToast('Đã làm mới dữ liệu toàn lớp!');
     };
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadData();
-      renderAll();
+      initDataAndSync();
     });
   </script>
 </body>
