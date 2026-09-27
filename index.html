@@ -102,11 +102,11 @@
       </div>
     </div>
 
-    <!-- Cảnh báo chế độ khách -->
+    <!-- Cảnh báo chế độ khách / Hướng dẫn chấm điểm -->
     <div id="noticeBanner" class="mb-6 bg-indigo-50 border border-indigo-100 rounded-xl p-3.5 text-xs text-indigo-800 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-2 font-medium">
         <i class="fa-solid fa-circle-info text-indigo-600 text-base"></i>
-        <span>Bạn đang xem hệ thống ở chế độ <b>Khách</b>. Hãy đăng nhập để có quyền chấm điểm thành viên.</span>
+        <span id="noticeBannerText">Bạn đang xem hệ thống ở chế độ <b>Khách</b>. Hãy đăng nhập để có quyền chấm điểm thành viên.</span>
       </div>
       <button onclick="this.parentElement.style.display='none'" class="text-indigo-400 hover:text-indigo-700 transition">
         <i class="fa-solid fa-xmark text-lg"></i>
@@ -114,8 +114,12 @@
     </div>
 
     <!-- ================= TAB 1: TỔ ================= -->
-    <section id="tabGroupsView" class="space-y-6">
+    <section id="tabGroupsView" class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" id="groupCardsContainer"></div>
+      <p class="text-center text-xs text-slate-400 font-medium pt-2">
+        <i class="fa-solid fa-wand-magic-sparkles text-blue-500 mr-1"></i>
+        Điểm của mỗi Tổ được tự động cộng/trừ trực tiếp từ điểm của các thành viên bên mục <b>Cá Nhân Từng Tổ</b>.
+      </p>
     </section>
 
     <!-- ================= TAB 2: CÁ NHÂN ================= -->
@@ -171,9 +175,9 @@
         </button>
       </div>
 
-      <div id="studentGroupDeductNotice" class="bg-amber-50 px-4 py-2 text-[11px] font-semibold text-amber-800 flex items-center gap-1.5 border-b border-amber-100 shrink-0 hidden">
+      <div id="studentGroupDeductNotice" class="bg-amber-50 px-4 py-2 text-[11px] font-semibold text-amber-800 flex items-center gap-1.5 border-b border-amber-100 shrink-0">
         <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
-        <span>Toàn bộ kết quả (Cộng / Trừ) sẽ được tự động đồng bộ sang Tổng điểm của Tổ.</span>
+        <span>Điểm cộng/trừ của cá nhân sẽ tự động cập nhật vào Tổng điểm của Tổ (không cần chấm lại ở mục Tổ).</span>
       </div>
 
       <div class="p-4 overflow-y-auto custom-scroll flex-grow space-y-2.5 bg-slate-50/30" id="criteriaListContainer"></div>
@@ -231,7 +235,7 @@
             <option value="to2">Tổ trưởng Tổ 2</option>
             <option value="to3">Tổ trưởng Tổ 3</option>
             <option value="to4">Tổ trưởng Tổ 4</option>
-            <option value="admin">Ban Cán Sự / Lớp trưởng</option>
+            <option value="admin">Lớp trưởng</option>
           </select>
         </div>
 
@@ -298,7 +302,7 @@
 
   <script>
     // =========================================================================
-    // ĐÃ GẮN SẴN CẤU HÌNH FIREBASE DỰ ÁN THIDUA11A1 CỦA BẠN
+    // CẤU HÌNH FIREBASE DỰ ÁN THIDUA11A1
     // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyAspUtloYgOtVZMrHb-x6V-W_PipWy-sKU",
@@ -429,6 +433,44 @@
       };
     }
 
+    // HÀM TỰ ĐỘNG CHUẨN HÓA ĐIỂM TỔ = 100 + TỔNG ĐIỂM CÁ NHÂN (XÓA CỘNG DỒN)
+    function syncGroupsWithStudents() {
+      if (!appData || !appData.groups || !appData.students) return false;
+      let changed = false;
+
+      appData.groups.forEach(group => {
+        const studs = appData.students.filter(s => s.group === group.id);
+        let totalStudentScore = 0;
+        let combinedHistory = [];
+
+        studs.forEach(s => {
+          totalStudentScore += (s.score || 0);
+          if (s.history && s.history.length > 0) {
+            s.history.forEach(h => {
+              combinedHistory.push({
+                text: `[${s.name}] ${h.text}`,
+                delta: h.delta,
+                time: h.time
+              });
+            });
+          }
+        });
+
+        const expectedGroupScore = 100 + totalStudentScore;
+        const oldHistory = group.history || [];
+        // Loại bỏ các mục chấm trùng trực tiếp vào tổ (không có tên học sinh trong ngoặc vuông)
+        const cleanExistingHistory = oldHistory.filter(h => h.text && h.text.startsWith('['));
+
+        if (group.score !== expectedGroupScore || cleanExistingHistory.length !== oldHistory.length || cleanExistingHistory.length !== combinedHistory.length) {
+          group.score = expectedGroupScore;
+          group.history = cleanExistingHistory.length === combinedHistory.length ? cleanExistingHistory : combinedHistory;
+          changed = true;
+        }
+      });
+
+      return changed;
+    }
+
     function loadLocalBackup() {
       const raw = localStorage.getItem('thidua_11a1_v5');
       if (raw) {
@@ -439,6 +481,7 @@
       } else {
         appData = getInitialData();
       }
+      syncGroupsWithStudents();
     }
 
     function initDataAndSync() {
@@ -456,9 +499,15 @@
 
           if (doc.exists) {
             appData = doc.data();
+            // Tự động phát hiện và xóa điểm Tổ bị cộng dồn ngay khi tải về
+            const fixedDuplicates = syncGroupsWithStudents();
             localStorage.setItem('thidua_11a1_v5', JSON.stringify(appData));
             renderAll();
+            if (fixedDuplicates) {
+              docRef.set(appData);
+            }
           } else {
+            syncGroupsWithStudents();
             docRef.set(appData);
           }
         }, (err) => {
@@ -473,6 +522,7 @@
     }
 
     function saveData() {
+      syncGroupsWithStudents();
       localStorage.setItem('thidua_11a1_v5', JSON.stringify(appData));
       
       if (docRef && isCloudConnected) {
@@ -520,14 +570,9 @@
                 </div>
               </div>
               <div class="flex items-center gap-1.5">
-                <button onclick="openHistoryModal('group', ${group.id})" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+                <button onclick="openHistoryModal('group', ${group.id})" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition" title="Xem nhật ký của Tổ">
                   <i class="fa-solid fa-clock-rotate-left text-sm"></i>
                 </button>
-                ${hasPerm ? `
-                  <button onclick="openEvalModal('group', ${group.id})" class="w-8 h-8 rounded-xl bg-blue-100 hover:bg-blue-600 hover:text-white text-blue-700 font-black flex items-center justify-center transition shadow-sm">
-                    <i class="fa-solid fa-ellipsis text-sm"></i>
-                  </button>
-                ` : ''}
               </div>
             </div>
             <div class="text-center py-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-2">
@@ -611,11 +656,11 @@
               <td class="py-3.5 px-2 font-bold text-xs text-slate-800">${student.name}</td>
               <td class="py-3.5 px-2 text-center font-black text-xs ${scoreColor}">${sign}${student.score}</td>
               <td class="py-3.5 px-4 text-right space-x-1.5">
-                <button onclick="openHistoryModal('student', ${student.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 transition">
+                <button onclick="openHistoryModal('student', ${student.id})" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 transition" title="Nhật ký">
                   <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                 </button>
                 ${hasPerm ? `
-                  <button onclick="openEvalModal('student', ${student.id})" class="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition shadow-sm">
+                  <button onclick="openEvalModal('student', ${student.id})" class="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold transition shadow-sm" title="Chấm điểm">
                     <i class="fa-solid fa-ellipsis text-xs"></i>
                   </button>
                 ` : ''}
@@ -684,15 +729,14 @@
     };
 
     window.openEvalModal = function(type, id) {
-      currentTargetType = type;
+      currentTargetType = 'student';
       evalCounts = {};
       
-      const arr = type === 'group' ? appData.groups : appData.students;
-      currentTarget = arr.find(x => x.id === id);
+      currentTarget = appData.students.find(x => x.id === id);
+      if (!currentTarget) return;
       
-      document.getElementById('evalTargetCategory').innerText = type === 'group' ? 'Đánh giá Tổ' : `Đánh giá Cá nhân (Tổ ${currentTarget.group})`;
+      document.getElementById('evalTargetCategory').innerText = `Đánh giá Cá nhân (Tổ ${currentTarget.group})`;
       document.getElementById('evalTargetName').innerText = currentTarget.name;
-      document.getElementById('studentGroupDeductNotice').classList.toggle('hidden', type === 'group');
       
       document.getElementById('evalTotalScore').innerText = '0';
       document.getElementById('evalTotalScore').className = 'text-xl font-black text-slate-800';
@@ -780,27 +824,46 @@
       
       const timeStr = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) + ' ' + new Date().toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'});
       
-      const targetArr = currentTargetType === 'group' ? appData.groups : appData.students;
-      const latestTarget = targetArr.find(x => x.id === currentTarget.id);
+      const latestTarget = appData.students.find(x => x.id === currentTarget.id);
       if (!latestTarget) return;
 
       if (!latestTarget.history) latestTarget.history = [];
       latestTarget.score += totalDelta;
       latestTarget.history.unshift({ text: details.join(', '), delta: totalDelta, time: timeStr });
       
-      if (currentTargetType === 'student') {
-        const grp = appData.groups.find(g => g.id === latestTarget.group);
-        if (grp) {
-          if (!grp.history) grp.history = [];
-          grp.score += totalDelta;
-          grp.history.unshift({ text: `[${latestTarget.name}] ${details.join(', ')}`, delta: totalDelta, time: timeStr });
-        }
+      const grp = appData.groups.find(g => g.id === latestTarget.group);
+      if (grp) {
+        if (!grp.history) grp.history = [];
+        grp.history.unshift({ text: `[${latestTarget.name}] ${details.join(', ')}`, delta: totalDelta, time: timeStr });
       }
       
       saveData();
       renderAll(); 
       closeModal('evalModal');
-      showToast('Đã đồng bộ điểm thành công!');
+      showToast('Đã đồng bộ điểm cá nhân & Tổ thành công!');
+    };
+
+    // XÓA 1 MỤC NHẬT KÝ NẾU CHẤM NHẦM
+    window.deleteStudentHistoryItem = function(studentId, histIndex) {
+      const student = appData.students.find(s => s.id === studentId);
+      if (!student || !student.history || !student.history[histIndex]) return;
+      if (!canEdit(student.group, 'student')) return;
+
+      const removed = student.history.splice(histIndex, 1)[0];
+      student.score -= removed.delta;
+
+      // Xóa dòng tương ứng trong lịch sử Tổ
+      const grp = appData.groups.find(g => g.id === student.group);
+      if (grp && grp.history) {
+        const expectedText = `[${student.name}] ${removed.text}`;
+        const gIdx = grp.history.findIndex(h => h.text === expectedText && h.time === removed.time && h.delta === removed.delta);
+        if (gIdx !== -1) grp.history.splice(gIdx, 1);
+      }
+
+      saveData();
+      renderAll();
+      openHistoryModal('student', studentId);
+      showToast('Đã xóa lượt chấm nhầm & hoàn lại điểm!');
     };
 
     window.openHistoryModal = function(type, id) {
@@ -813,7 +876,8 @@
       if (!target.history || target.history.length === 0) {
         container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs font-medium italic">Không có lịch sử đánh giá.</div>`;
       } else {
-        target.history.forEach(item => {
+        const allowDelete = (type === 'student') && canEdit(target.group, 'student');
+        target.history.forEach((item, idx) => {
           const color = item.delta > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
           const sign = item.delta > 0 ? '+' : '';
           container.innerHTML += `
@@ -822,7 +886,14 @@
                 <p class="text-xs font-bold text-slate-800 leading-relaxed">${item.text}</p>
                 <p class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">${item.time}</p>
               </div>
-              <span class="text-xs font-black px-2.5 py-1 rounded-lg ${color} shrink-0 shadow-sm">${sign}${item.delta}</span>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-xs font-black px-2.5 py-1 rounded-lg ${color} shadow-sm">${sign}${item.delta}</span>
+                ${allowDelete ? `
+                  <button onclick="deleteStudentHistoryItem(${target.id},${idx})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-500 text-rose-500 hover:text-white flex items-center justify-center transition" title="Xóa lượt chấm này">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                ` : ''}
+              </div>
             </div>
           `;
         });
@@ -837,6 +908,8 @@
       if (pass === appData.passwords[role]) {
         currentUserRole = role;
         closeModal('authModal');
+        // Tự động chuyển sang tab Cá Nhân Từng Tổ để Tổ trưởng chấm điểm ngay
+        switchTab('students');
         renderAll();
         showToast('Đăng nhập thành công!');
       } else {
@@ -873,13 +946,17 @@
       const authBtn = document.getElementById('authBtn');
       const resetBtn = document.getElementById('resetWeekBtn');
       const notice = document.getElementById('noticeBanner');
+      const noticeText = document.getElementById('noticeBannerText');
       
       if (currentUserRole) {
         let name = currentUserRole === 'admin' ? 'Admin' : `Tổ ${currentUserRole.replace('to','')}`;
         badge.className = "text-xs font-black px-3 py-2 rounded-xl bg-emerald-500 text-white shadow-md flex items-center gap-1.5";
         badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${name}</span>`;
         authBtn.innerHTML = `<i class="fa-solid fa-gear"></i> <span>Cài đặt</span>`;
-        if (notice) notice.style.display = 'none';
+        if (notice && noticeText) {
+          notice.style.display = 'flex';
+          noticeText.innerHTML = `Hãy chấm điểm tại tab <b>Cá Nhân Từng Tổ</b> — điểm của Tổ sẽ tự động cộng/trừ theo thành viên.`;
+        }
         resetBtn.classList.toggle('hidden', currentUserRole !== 'admin');
         resetBtn.classList.toggle('flex', currentUserRole === 'admin');
         
@@ -890,6 +967,10 @@
         badge.className = "text-xs font-bold px-3 py-2 rounded-xl bg-white/10 border border-white/20 flex items-center gap-1.5";
         badge.innerHTML = `<i class="fa-solid fa-eye text-slate-300"></i> <span>Khách</span>`;
         authBtn.innerHTML = `<i class="fa-solid fa-user-lock"></i> <span>Đăng nhập</span>`;
+        if (notice && noticeText) {
+          notice.style.display = 'flex';
+          noticeText.innerHTML = `Bạn đang xem hệ thống ở chế độ <b>Khách</b>. Hãy đăng nhập để có quyền chấm điểm thành viên.`;
+        }
         resetBtn.classList.add('hidden');
         resetBtn.classList.remove('flex');
         
